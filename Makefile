@@ -12,9 +12,6 @@ PROJECT := aiax
 
 export GO111MODULE = on
 
-default_target: all
-
-
 build_tags = netgo ledger gcc
 build_tags += $(BUILD_TAGS)
 build_tags := $(strip $(build_tags))
@@ -53,12 +50,29 @@ $(BUILDDIR)/:
 
 distclean: clean tools-clean
 
+go.sum: go.mod
+	echo "Ensure dependencies have not been modified ..." >&2
+	go mod verify
+	go mod tidy
+
 clean:
 	rm -rf \
     $(BUILDDIR)/ \
     artifacts/ \
     tmp-swagger-gen/
 
-all: build
+###############################################################################
+###                          Tools & Dependencies                           ###
+###############################################################################
 
+TOOLS_DESTDIR  ?= $(GOPATH)/bin
+
+###############################################################################
+###                                Protobuf                                 ###
+###############################################################################
+
+
+
+all: build
+default_target: all
 .PHONY: default_target all build distclean clean
