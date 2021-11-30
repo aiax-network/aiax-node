@@ -85,6 +85,9 @@ import (
 	ibckeeper "github.com/cosmos/ibc-go/v2/modules/core/keeper"
 	ibctesting "github.com/cosmos/ibc-go/v2/testing"
 	"github.com/gorilla/mux"
+	"github.com/peggyjv/gravity-bridge/module/x/gravity"
+	gravitykeeper "github.com/peggyjv/gravity-bridge/module/x/gravity/keeper"
+	gravitytypes "github.com/peggyjv/gravity-bridge/module/x/gravity/types"
 	"github.com/rakyll/statik/fs"
 	"github.com/spf13/cast"
 	abci "github.com/tendermint/tendermint/abci/types"
@@ -109,14 +112,14 @@ import (
 )
 
 func init() {
-	userHomeDir, err := os.UserHomeDir()
-	if err != nil {
-		panic(err)
+	if DefaultNodeHome == "" {
+		userHomeDir, err := os.UserHomeDir()
+		if err != nil {
+			panic(err)
+		}
+		DefaultNodeHome = filepath.Join(userHomeDir, ".aiax")
 	}
-	DefaultNodeHome = filepath.Join(userHomeDir, ".evmosd")
 }
-
-const Name = "aiaxd"
 
 var (
 	// DefaultNodeHome default home directories for the application daemon
@@ -146,6 +149,8 @@ var (
 		upgrade.AppModuleBasic{},
 		evidence.AppModuleBasic{},
 		transfer.AppModuleBasic{},
+		vesting.AppModuleBasic{},
+		gravity.AppModuleBasic{},
 		evm.AppModuleBasic{},
 		feemarket.AppModuleBasic{},
 		intrarelayer.AppModuleBasic{},
@@ -210,6 +215,9 @@ type Aiax struct {
 	// make scoped keepers public for test purposes
 	ScopedIBCKeeper      capabilitykeeper.ScopedKeeper
 	ScopedTransferKeeper capabilitykeeper.ScopedKeeper
+
+	// Gravity keeper
+	GravityKeeper gravitykeeper.Keeper
 
 	// Ethermint keepers
 	EvmKeeper       *evmkeeper.Keeper
@@ -546,6 +554,8 @@ func initParamsKeeper(
 	paramsKeeper.Subspace(crisistypes.ModuleName)
 	paramsKeeper.Subspace(ibctransfertypes.ModuleName)
 	paramsKeeper.Subspace(ibchost.ModuleName)
+	// gravity
+	paramsKeeper.Subspace(gravitytypes.ModuleName)
 	// ethermint subspaces
 	paramsKeeper.Subspace(evmtypes.ModuleName)
 	paramsKeeper.Subspace(feemarkettypes.ModuleName)
@@ -575,7 +585,7 @@ func NewAiax(
 ) *Aiax {
 
 	bApp := baseapp.NewBaseApp(
-		Name,
+		version.AppName,
 		logger,
 		db,
 		encodingConfig.TxConfig.TxDecoder(),
@@ -594,6 +604,8 @@ func NewAiax(
 		feegrant.StoreKey, authzkeeper.StoreKey,
 		// ibc keys
 		ibchost.StoreKey, ibctransfertypes.StoreKey,
+		// gravity keys
+		gravitytypes.StoreKey,
 		// ethermint keys
 		evmtypes.StoreKey, feemarkettypes.StoreKey,
 		// evmos keys
@@ -656,6 +668,17 @@ func NewAiax(
 	)
 	app.AuthzKeeper = authzkeeper.NewKeeper(keys[authzkeeper.StoreKey], app.appCodec, app.BaseApp.MsgServiceRouter())
 	tracer := cast.ToString(appOpts.Get(srvflags.EVMTracer))
+
+	app.GravityKeeper = gravitykeeper.NewKeeper(
+		app.appCodec, keys[gravitytypes.StoreKey], app.GetSubspace(gravitytypes.ModuleName), app.AccountKeeper,
+		app.StakingKeeper, app.BankKeeper, app.SlashingKeeper, sdk.DefaultPowerReduction,
+	)
+	app.GravityKeeper.SetHooks(
+		gravitytypes.NewMultiGravityHooks(
+		// TODO:
+		),
+	)
+
 	app.FeeMarketKeeper = feemarketkeeper.NewKeeper(
 		app.appCodec, keys[feemarkettypes.StoreKey], app.GetSubspace(feemarkettypes.ModuleName),
 	)
@@ -737,6 +760,8 @@ func NewAiax(
 		// ibc modules
 		ibc.NewAppModule(app.IBCKeeper),
 		transferModule,
+		// Gravity
+		gravity.NewAppModule(app.GravityKeeper, app.BankKeeper),
 		// Ethermint app modules
 		evm.NewAppModule(app.EvmKeeper, app.AccountKeeper),
 		feemarket.NewAppModule(app.FeeMarketKeeper),
@@ -753,6 +778,7 @@ func NewAiax(
 	app.mm.SetOrderBeginBlockers(
 		upgradetypes.ModuleName,
 		capabilitytypes.ModuleName,
+		gravitytypes.ModuleName,
 		evmtypes.ModuleName,
 		minttypes.ModuleName, distrtypes.ModuleName, slashingtypes.ModuleName,
 		evidencetypes.ModuleName, stakingtypes.ModuleName, ibchost.ModuleName,
@@ -761,7 +787,7 @@ func NewAiax(
 	// NOTE: fee market module must go last in order to retrieve the block gas used.
 	app.mm.SetOrderEndBlockers(
 		crisistypes.ModuleName, govtypes.ModuleName, stakingtypes.ModuleName,
-		evmtypes.ModuleName, feemarkettypes.ModuleName,
+		gravitytypes.ModuleName, evmtypes.ModuleName, feemarkettypes.ModuleName,
 	)
 
 	// NOTE: The genutils module must occur after staking so that pools are
@@ -775,6 +801,8 @@ func NewAiax(
 		slashingtypes.ModuleName, govtypes.ModuleName, minttypes.ModuleName,
 		ibchost.ModuleName, genutiltypes.ModuleName, evidencetypes.ModuleName, ibctransfertypes.ModuleName,
 		authz.ModuleName, feegrant.ModuleName,
+		// Gravity
+		gravitytypes.ModuleName,
 		// Ethermint modules
 		evmtypes.ModuleName, feemarkettypes.ModuleName,
 		// Evmos modules
