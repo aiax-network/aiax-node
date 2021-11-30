@@ -162,8 +162,9 @@ var (
 		minttypes.ModuleName:           {authtypes.Minter},
 		stakingtypes.BondedPoolName:    {authtypes.Burner, authtypes.Staking},
 		stakingtypes.NotBondedPoolName: {authtypes.Burner, authtypes.Staking},
-		govtypes.ModuleName:            {authtypes.Burner},
+		govtypes.ModuleName:            {authtypes.Burner},    
 		ibctransfertypes.ModuleName:    {authtypes.Minter, authtypes.Burner},
+    gravitytypes.ModuleName:        {authtypes.Minter, authtypes.Burner},
 		evmtypes.ModuleName:            {authtypes.Minter, authtypes.Burner}, // used for secure addition and subtraction of balance using module account
 		irt.ModuleName:                 {authtypes.Minter, authtypes.Burner},
 	}
