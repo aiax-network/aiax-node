@@ -27,4 +27,6 @@ func main() {
 func setupConfig() {
 	config := sdk.GetConfig()
 	cmdcfg.SetBech32Prefixes(config)
+	cmdcfg.SetBip44CoinType(config)
+	config.Seal()
 }
