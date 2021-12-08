@@ -739,6 +739,7 @@ func NewAiax(
 		app.AccountKeeper,
 		&app.BankKeeper,
 		app.EvmKeeper,
+    &app.GravityKeeper,
 		&app.IntrarelayerKeeper,
 	)
 

@@ -11,6 +11,7 @@ import (
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	"github.com/tendermint/tendermint/libs/log"
 	evmkeeper "github.com/tharsis/ethermint/x/evm/keeper"
+  grvkeeper "github.com/peggyjv/gravity-bridge/module/x/gravity/keeper" 
 	irlkeeper "github.com/tharsis/evmos/x/intrarelayer/keeper"
 )
 
@@ -22,6 +23,7 @@ type Keeper struct {
 	accKeeper acckeeper.AccountKeeperI
 	banKeeper *bankeeper.Keeper
 	evmKeeper *evmkeeper.Keeper
+  grvKeeper *grvkeeper.Keeper
 	irlKeeper *irlkeeper.Keeper
 }
 
@@ -32,20 +34,25 @@ func NewKeeper(
 	accKeeper acckeeper.AccountKeeperI,
 	banKeeper *bankeeper.Keeper,
 	evmKeeper *evmkeeper.Keeper,
+  grvKeeper *grvkeeper.Keeper,
 	irlKeeper *irlkeeper.Keeper,
 ) Keeper {
 	if !ps.HasKeyTable() {
 		ps = ps.WithKeyTable(paramtypes.NewKeyTable())
 	}
-	return Keeper{
+  keeper := Keeper{
 		storeKey:   storeKey,
 		cdc:        cdc,
 		paramstore: ps,
 		accKeeper:  accKeeper,
 		banKeeper:  banKeeper,
 		evmKeeper:  evmKeeper,
+    grvKeeper:  grvKeeper,
 		irlKeeper:  irlKeeper,
 	}
+  grvKeeper.SetEthereumEventsHook(keeper)
+
+  return keeper
 }
 
 func (k Keeper) Logger(ctx sdk.Context) log.Logger {
