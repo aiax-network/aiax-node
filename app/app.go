@@ -9,6 +9,9 @@ import (
 	"encoding/json"
 	"path/filepath"
 
+	aiax "github.com/aiax-network/aiax-node/x/aiax"
+	aiaxkeeper "github.com/aiax-network/aiax-node/x/aiax/keeper"
+	aiaxtypes "github.com/aiax-network/aiax-node/x/aiax/types"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/grpc/tmservice"
@@ -154,6 +157,7 @@ var (
 		evm.AppModuleBasic{},
 		feemarket.AppModuleBasic{},
 		intrarelayer.AppModuleBasic{},
+		aiax.AppModuleBasic{},
 	)
 
 	maccPerms = map[string][]string{
@@ -162,11 +166,12 @@ var (
 		minttypes.ModuleName:           {authtypes.Minter},
 		stakingtypes.BondedPoolName:    {authtypes.Burner, authtypes.Staking},
 		stakingtypes.NotBondedPoolName: {authtypes.Burner, authtypes.Staking},
-		govtypes.ModuleName:            {authtypes.Burner},    
+		govtypes.ModuleName:            {authtypes.Burner},
 		ibctransfertypes.ModuleName:    {authtypes.Minter, authtypes.Burner},
-    gravitytypes.ModuleName:        {authtypes.Minter, authtypes.Burner},
+		gravitytypes.ModuleName:        {authtypes.Minter, authtypes.Burner},
 		evmtypes.ModuleName:            {authtypes.Minter, authtypes.Burner}, // used for secure addition and subtraction of balance using module account
 		irt.ModuleName:                 {authtypes.Minter, authtypes.Burner},
+		aiaxtypes.ModuleName:           {authtypes.Minter, authtypes.Burner},
 	}
 
 	// module accounts that are allowed to receive tokens
@@ -176,7 +181,6 @@ var (
 )
 var (
 	_ servertypes.Application = (*Aiax)(nil)
-	_ simapp.App              = (*Aiax)(nil)
 	_ ibctesting.TestingApp   = (*Aiax)(nil)
 )
 
@@ -224,14 +228,14 @@ type Aiax struct {
 	EvmKeeper       *evmkeeper.Keeper
 	FeeMarketKeeper feemarketkeeper.Keeper
 
-	// Evmos keepers
+	// Evmos keeper
 	IntrarelayerKeeper irk.Keeper
+
+	// Aiax keeper
+	AiaxKeeper aiaxkeeper.Keeper
 
 	// the module manager
 	mm *module.Manager
-
-	// simulation manager
-	sm *module.SimulationManager
 
 	// the configurator
 	configurator module.Configurator
@@ -294,9 +298,7 @@ func (app *Aiax) GetSubspace(moduleName string) paramstypes.Subspace {
 	subspace, _ := app.ParamsKeeper.GetSubspace(moduleName)
 	return subspace
 }
-func (app *Aiax) SimulationManager() *module.SimulationManager {
-	return app.sm
-}
+
 func (app *Aiax) RegisterAPIRoutes(apiSvr *api.Server, apiConfig config.APIConfig) {
 	clientCtx := apiSvr.ClientCtx
 	rpc.RegisterRoutes(clientCtx, apiSvr.Router)
@@ -308,7 +310,6 @@ func (app *Aiax) RegisterAPIRoutes(apiSvr *api.Server, apiConfig config.APIConfi
 	if apiConfig.Swagger {
 		RegisterSwaggerAPI(clientCtx, apiSvr.Router)
 	}
-
 }
 
 func (app *Aiax) RegisterTxService(clientCtx client.Context) {
@@ -333,6 +334,10 @@ func (app *Aiax) GetIBCKeeper() *ibckeeper.Keeper {
 
 func (app *Aiax) GetScopedIBCKeeper() capabilitykeeper.ScopedKeeper {
 	return app.ScopedIBCKeeper
+}
+
+func (app *Aiax) GetKeeper() *aiaxkeeper.Keeper {
+	return &app.AiaxKeeper
 }
 
 func (app *Aiax) GetTxConfig() client.TxConfig {
@@ -555,13 +560,11 @@ func initParamsKeeper(
 	paramsKeeper.Subspace(crisistypes.ModuleName)
 	paramsKeeper.Subspace(ibctransfertypes.ModuleName)
 	paramsKeeper.Subspace(ibchost.ModuleName)
-	// gravity
 	paramsKeeper.Subspace(gravitytypes.ModuleName)
-	// ethermint subspaces
 	paramsKeeper.Subspace(evmtypes.ModuleName)
 	paramsKeeper.Subspace(feemarkettypes.ModuleName)
-	// evmos subspaces
 	paramsKeeper.Subspace(irt.ModuleName)
+	paramsKeeper.Subspace(aiaxtypes.ModuleName)
 
 	return paramsKeeper
 }
@@ -603,14 +606,11 @@ func NewAiax(
 		govtypes.StoreKey, paramstypes.StoreKey, upgradetypes.StoreKey,
 		evidencetypes.StoreKey, capabilitytypes.StoreKey,
 		feegrant.StoreKey, authzkeeper.StoreKey,
-		// ibc keys
 		ibchost.StoreKey, ibctransfertypes.StoreKey,
-		// gravity keys
 		gravitytypes.StoreKey,
-		// ethermint keys
 		evmtypes.StoreKey, feemarkettypes.StoreKey,
-		// evmos keys
 		irt.StoreKey,
+		aiaxtypes.StoreKey,
 	)
 
 	tkeys := sdk.NewTransientStoreKeys(paramstypes.TStoreKey, evmtypes.TransientKey)
@@ -728,10 +728,19 @@ func NewAiax(
 	ibcRouter.AddRoute(ibctransfertypes.ModuleName, transferModule)
 	app.IBCKeeper.SetRouter(ibcRouter)
 
-	evidenceKeeper := evidencekeeper.NewKeeper(
+	app.EvidenceKeeper = *evidencekeeper.NewKeeper(
 		app.appCodec, keys[evidencetypes.StoreKey], &app.StakingKeeper, app.SlashingKeeper,
 	)
-	app.EvidenceKeeper = *evidenceKeeper
+
+	app.AiaxKeeper = aiaxkeeper.NewKeeper(
+		keys[aiaxtypes.StoreKey],
+		app.appCodec,
+		app.GetSubspace(aiaxtypes.ModuleName),
+		app.AccountKeeper,
+		&app.BankKeeper,
+		app.EvmKeeper,
+		&app.IntrarelayerKeeper,
+	)
 
 	skipGenesisInvariants := cast.ToBool(appOpts.Get(crisis.FlagSkipGenesisInvariants))
 
@@ -756,17 +765,13 @@ func NewAiax(
 		params.NewAppModule(app.ParamsKeeper),
 		feegrantmodule.NewAppModule(app.appCodec, app.AccountKeeper, app.BankKeeper, app.FeeGrantKeeper, app.interfaceRegistry),
 		authzmodule.NewAppModule(app.appCodec, app.AuthzKeeper, app.AccountKeeper, app.BankKeeper, app.interfaceRegistry),
-
-		// ibc modules
 		ibc.NewAppModule(app.IBCKeeper),
 		transferModule,
-		// Gravity
 		gravity.NewAppModule(app.GravityKeeper, app.BankKeeper),
-		// Ethermint app modules
 		evm.NewAppModule(app.EvmKeeper, app.AccountKeeper),
 		feemarket.NewAppModule(app.FeeMarketKeeper),
-		// Evmos app modules
 		intrarelayer.NewAppModule(app.IntrarelayerKeeper, app.AccountKeeper),
+		aiax.NewAppModule(app.AiaxKeeper),
 	)
 
 	// During begin block slashing happens after distr.BeginBlocker so that
@@ -778,16 +783,26 @@ func NewAiax(
 	app.mm.SetOrderBeginBlockers(
 		upgradetypes.ModuleName,
 		capabilitytypes.ModuleName,
+		aiaxtypes.ModuleName,
 		gravitytypes.ModuleName,
 		evmtypes.ModuleName,
-		minttypes.ModuleName, distrtypes.ModuleName, slashingtypes.ModuleName,
-		evidencetypes.ModuleName, stakingtypes.ModuleName, ibchost.ModuleName,
+		minttypes.ModuleName,
+		distrtypes.ModuleName,
+		slashingtypes.ModuleName,
+		evidencetypes.ModuleName,
+		stakingtypes.ModuleName,
+		ibchost.ModuleName,
 	)
 
 	// NOTE: fee market module must go last in order to retrieve the block gas used.
 	app.mm.SetOrderEndBlockers(
-		crisistypes.ModuleName, govtypes.ModuleName, stakingtypes.ModuleName,
-		gravitytypes.ModuleName, evmtypes.ModuleName, feemarkettypes.ModuleName,
+		crisistypes.ModuleName,
+		govtypes.ModuleName,
+		stakingtypes.ModuleName,
+		gravitytypes.ModuleName,
+		evmtypes.ModuleName,
+		feemarkettypes.ModuleName,
+		aiaxtypes.ModuleName,
 	)
 
 	// NOTE: The genutils module must occur after staking so that pools are
@@ -797,16 +812,25 @@ func NewAiax(
 	// can do so safely.
 	app.mm.SetOrderInitGenesis(
 		// SDK modules
-		capabilitytypes.ModuleName, authtypes.ModuleName, banktypes.ModuleName, distrtypes.ModuleName, stakingtypes.ModuleName,
-		slashingtypes.ModuleName, govtypes.ModuleName, minttypes.ModuleName,
-		ibchost.ModuleName, genutiltypes.ModuleName, evidencetypes.ModuleName, ibctransfertypes.ModuleName,
-		authz.ModuleName, feegrant.ModuleName,
-		// Gravity
+		capabilitytypes.ModuleName,
+		authtypes.ModuleName,
+		banktypes.ModuleName,
+		distrtypes.ModuleName,
+		stakingtypes.ModuleName,
+		slashingtypes.ModuleName,
+		govtypes.ModuleName,
+		minttypes.ModuleName,
+		ibchost.ModuleName,
+		genutiltypes.ModuleName,
+		evidencetypes.ModuleName,
+		ibctransfertypes.ModuleName,
+		authz.ModuleName,
+		feegrant.ModuleName,
 		gravitytypes.ModuleName,
-		// Ethermint modules
-		evmtypes.ModuleName, feemarkettypes.ModuleName,
-		// Evmos modules
+		evmtypes.ModuleName,
+		feemarkettypes.ModuleName,
 		irt.ModuleName,
+		aiaxtypes.ModuleName,
 		// NOTE: crisis module must go at the end to check for invariants on each module
 		crisistypes.ModuleName,
 	)
@@ -815,30 +839,6 @@ func NewAiax(
 	app.mm.RegisterRoutes(app.Router(), app.QueryRouter(), encodingConfig.Amino)
 	app.configurator = module.NewConfigurator(app.appCodec, app.MsgServiceRouter(), app.GRPCQueryRouter())
 	app.mm.RegisterServices(app.configurator)
-
-	// create the simulation manager and define the order of the modules for deterministic simulations
-
-	// NOTE: this is not required apps that don't use the simulator for fuzz testing
-	// transactions
-	app.sm = module.NewSimulationManager(
-		auth.NewAppModule(app.appCodec, app.AccountKeeper, authsims.RandomGenesisAccounts),
-		bank.NewAppModule(app.appCodec, app.BankKeeper, app.AccountKeeper),
-		capability.NewAppModule(app.appCodec, *app.CapabilityKeeper),
-		gov.NewAppModule(app.appCodec, app.GovKeeper, app.AccountKeeper, app.BankKeeper),
-		mint.NewAppModule(app.appCodec, app.MintKeeper, app.AccountKeeper),
-		staking.NewAppModule(app.appCodec, app.StakingKeeper, app.AccountKeeper, app.BankKeeper),
-		distr.NewAppModule(app.appCodec, app.DistrKeeper, app.AccountKeeper, app.BankKeeper, app.StakingKeeper),
-		slashing.NewAppModule(app.appCodec, app.SlashingKeeper, app.AccountKeeper, app.BankKeeper, app.StakingKeeper),
-		params.NewAppModule(app.ParamsKeeper),
-		evidence.NewAppModule(app.EvidenceKeeper),
-		feegrantmodule.NewAppModule(app.appCodec, app.AccountKeeper, app.BankKeeper, app.FeeGrantKeeper, app.interfaceRegistry),
-		authzmodule.NewAppModule(app.appCodec, app.AuthzKeeper, app.AccountKeeper, app.BankKeeper, app.interfaceRegistry),
-		ibc.NewAppModule(app.IBCKeeper),
-		transferModule,
-		evm.NewAppModule(app.EvmKeeper, app.AccountKeeper),
-		feemarket.NewAppModule(app.FeeMarketKeeper),
-	)
-	app.sm.RegisterStoreDecoders()
 
 	// initialize stores
 	app.MountKVStores(keys)

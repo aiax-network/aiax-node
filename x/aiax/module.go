@@ -2,7 +2,6 @@ package aiax
 
 import (
 	"encoding/json"
-	"math/rand"
 
 	cli "github.com/aiax-network/aiax-node/x/aiax/client"
 	"github.com/aiax-network/aiax-node/x/aiax/keeper"
@@ -12,7 +11,6 @@ import (
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
-	simtypes "github.com/cosmos/cosmos-sdk/types/simulation"
 	"github.com/gorilla/mux"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/spf13/cobra"
@@ -20,9 +18,8 @@ import (
 )
 
 var (
-	_ module.AppModuleBasic      = AppModuleBasic{}
-	_ module.AppModule           = AppModule{}
-	_ module.AppModuleSimulation = AppModule{}
+	_ module.AppModuleBasic = AppModuleBasic{}
+	_ module.AppModule      = AppModule{}
 )
 
 type AppModuleBasic struct{}
@@ -109,25 +106,4 @@ func (am AppModule) BeginBlock(sdk.Context, abci.RequestBeginBlock) {}
 
 func (am AppModule) EndBlock(sdk.Context, abci.RequestEndBlock) []abci.ValidatorUpdate {
 	return []abci.ValidatorUpdate{}
-}
-
-//
-// module.AppModuleSimulation
-
-func (am AppModule) GenerateGenesisState(input *module.SimulationState) {
-}
-
-func (am AppModule) ProposalContents(simState module.SimulationState) []simtypes.WeightedProposalContent {
-	return []simtypes.WeightedProposalContent{}
-}
-
-func (am AppModule) RandomizedParams(r *rand.Rand) []simtypes.ParamChange {
-	return []simtypes.ParamChange{}
-}
-
-func (am AppModule) RegisterStoreDecoder(decoderRegistry sdk.StoreDecoderRegistry) {
-}
-
-func (am AppModule) WeightedOperations(simState module.SimulationState) []simtypes.WeightedOperation {
-	return []simtypes.WeightedOperation{}
 }
