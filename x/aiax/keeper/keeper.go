@@ -9,21 +9,21 @@ import (
 	acckeeper "github.com/cosmos/cosmos-sdk/x/auth/keeper"
 	bankeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
+	grvkeeper "github.com/peggyjv/gravity-bridge/module/x/gravity/keeper"
 	"github.com/tendermint/tendermint/libs/log"
 	evmkeeper "github.com/tharsis/ethermint/x/evm/keeper"
-  grvkeeper "github.com/peggyjv/gravity-bridge/module/x/gravity/keeper" 
 	irlkeeper "github.com/tharsis/evmos/x/intrarelayer/keeper"
 )
 
 type Keeper struct {
 	storeKey   sdk.StoreKey
 	cdc        codec.BinaryCodec
-	paramstore paramtypes.Subspace
+	paramStore paramtypes.Subspace
 
 	accKeeper acckeeper.AccountKeeperI
-	banKeeper *bankeeper.Keeper
+	banKeeper bankeeper.Keeper
 	evmKeeper *evmkeeper.Keeper
-  grvKeeper *grvkeeper.Keeper
+	grvKeeper *grvkeeper.Keeper
 	irlKeeper *irlkeeper.Keeper
 }
 
@@ -32,27 +32,27 @@ func NewKeeper(
 	cdc codec.BinaryCodec,
 	ps paramtypes.Subspace,
 	accKeeper acckeeper.AccountKeeperI,
-	banKeeper *bankeeper.Keeper,
+	banKeeper bankeeper.Keeper,
 	evmKeeper *evmkeeper.Keeper,
-  grvKeeper *grvkeeper.Keeper,
+	grvKeeper *grvkeeper.Keeper,
 	irlKeeper *irlkeeper.Keeper,
 ) Keeper {
 	if !ps.HasKeyTable() {
 		ps = ps.WithKeyTable(paramtypes.NewKeyTable())
 	}
-  keeper := Keeper{
+	keeper := Keeper{
 		storeKey:   storeKey,
 		cdc:        cdc,
-		paramstore: ps,
+		paramStore: ps,
 		accKeeper:  accKeeper,
 		banKeeper:  banKeeper,
 		evmKeeper:  evmKeeper,
-    grvKeeper:  grvKeeper,
+		grvKeeper:  grvKeeper,
 		irlKeeper:  irlKeeper,
 	}
-  grvKeeper.SetEthereumEventsHook(keeper)
+	grvKeeper.SetEthereumEventsHook(keeper)
 
-  return keeper
+	return keeper
 }
 
 func (k Keeper) Logger(ctx sdk.Context) log.Logger {

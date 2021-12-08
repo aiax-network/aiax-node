@@ -737,7 +737,7 @@ func NewAiax(
 		app.appCodec,
 		app.GetSubspace(aiaxtypes.ModuleName),
 		app.AccountKeeper,
-		&app.BankKeeper,
+		app.BankKeeper,
 		app.EvmKeeper,
     &app.GravityKeeper,
 		&app.IntrarelayerKeeper,
