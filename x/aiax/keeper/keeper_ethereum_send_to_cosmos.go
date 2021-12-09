@@ -85,8 +85,8 @@ func (k Keeper) handleSendToCosmosEvent(ctx sdk.Context, evt gtypes.SendToCosmos
 		return false, err
 	}
 	receiver := common.BytesToAddress(accAddress.Bytes())
-  
-  // Mint required amount of local tokens
+
+	// Mint required amount of local tokens
 	_, err = k.irlKeeper.CallEVM(
 		ctx, contracts.ERC20BurnableAndMintableContract.ABI, types.ModuleAddress,
 		localAddress, "mint", receiver, evt.Amount.BigInt())
@@ -107,5 +107,6 @@ func (k Keeper) handleSendToCosmosEvent(ctx sdk.Context, evt gtypes.SendToCosmos
 			),
 		},
 	)
+
 	return true, nil
 }
