@@ -21,10 +21,10 @@ const (
 	LocalERC20MappingKey
 )
 
-var ModuleAdress common.Address
+var ModuleAddress common.Address
 
 func init() {
-	ModuleAdress = common.BytesToAddress(authtypes.NewModuleAddress(ModuleName).Bytes())
+	ModuleAddress = common.BytesToAddress(authtypes.NewModuleAddress(ModuleName).Bytes())
 }
 
 /// Make External ERC20 Token contract address to the Local ERC20 Token contract address key.
