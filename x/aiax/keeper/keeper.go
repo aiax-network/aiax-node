@@ -20,25 +20,29 @@ type Keeper struct {
 	cdc        codec.BinaryCodec
 	paramStore paramtypes.Subspace
 
-	accKeeper acckeeper.AccountKeeperI
+	accKeeper *acckeeper.AccountKeeper
 	banKeeper bankeeper.Keeper
 	evmKeeper *evmkeeper.Keeper
 	grvKeeper *grvkeeper.Keeper
 	irlKeeper *irlkeeper.Keeper
 }
 
+func (k Keeper) GetAccountKeeper() acckeeper.AccountKeeper {
+  return *k.accKeeper
+}
+
 func NewKeeper(
 	storeKey sdk.StoreKey,
 	cdc codec.BinaryCodec,
 	ps paramtypes.Subspace,
-	accKeeper acckeeper.AccountKeeperI,
+	accKeeper *acckeeper.AccountKeeper,
 	banKeeper bankeeper.Keeper,
 	evmKeeper *evmkeeper.Keeper,
 	grvKeeper *grvkeeper.Keeper,
 	irlKeeper *irlkeeper.Keeper,
 ) Keeper {
 	if !ps.HasKeyTable() {
-		ps = ps.WithKeyTable(paramtypes.NewKeyTable())
+		ps = ps.WithKeyTable(types.ParamKeyTable())
 	}
 	keeper := Keeper{
 		storeKey:   storeKey,

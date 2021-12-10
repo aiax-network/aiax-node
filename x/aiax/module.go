@@ -2,6 +2,7 @@ package aiax
 
 import (
 	"encoding/json"
+	"fmt"
 
 	cli "github.com/aiax-network/aiax-node/x/aiax/client"
 	"github.com/aiax-network/aiax-node/x/aiax/keeper"
@@ -39,12 +40,16 @@ func (AppModuleBasic) RegisterInterfaces(interfaceRegistry codectypes.InterfaceR
 	types.RegisterInterfaces(interfaceRegistry)
 }
 
-func (AppModuleBasic) DefaultGenesis(codec.JSONCodec) json.RawMessage {
-	return []byte("{}")
+func (AppModuleBasic) DefaultGenesis(cdc codec.JSONCodec) json.RawMessage {
+	return cdc.MustMarshalJSON(types.DefaultGenesisState())
 }
 
-func (AppModuleBasic) ValidateGenesis(codec.JSONCodec, client.TxEncodingConfig, json.RawMessage) error {
-	return nil
+func (AppModuleBasic) ValidateGenesis(cdc codec.JSONCodec, config client.TxEncodingConfig, bz json.RawMessage) error {
+	var gs types.GenesisState
+	if err := cdc.UnmarshalJSON(bz, &gs); err != nil {
+		return fmt.Errorf("failed to unmarshal %s genesis state: %w", types.ModuleName, err)
+	}
+	return gs.Validate()
 }
 
 func (AppModuleBasic) RegisterRESTRoutes(clientCtx client.Context, rtr *mux.Router) {}
@@ -73,12 +78,16 @@ func NewAppModule(
 	}
 }
 
-func (am AppModule) InitGenesis(sdk.Context, codec.JSONCodec, json.RawMessage) []abci.ValidatorUpdate {
+func (am AppModule) InitGenesis(ctx sdk.Context, cdc codec.JSONCodec, data json.RawMessage) []abci.ValidatorUpdate {
+	var gs types.GenesisState
+	cdc.MustUnmarshalJSON(data, &gs)
+	InitGenesis(ctx, am.keeper, am.keeper.GetAccountKeeper(), gs)
 	return []abci.ValidatorUpdate{}
 }
 
-func (am AppModule) ExportGenesis(sdk.Context, codec.JSONCodec) json.RawMessage {
-	return nil
+func (am AppModule) ExportGenesis(ctx sdk.Context, cdc codec.JSONCodec) json.RawMessage {
+	gs := ExportGenesis(ctx, am.keeper)
+	return cdc.MustMarshalJSON(gs)
 }
 
 func (AppModule) Name() string {

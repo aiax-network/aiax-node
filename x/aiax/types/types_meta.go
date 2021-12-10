@@ -6,6 +6,6 @@ func CreateDenom(address string) string {
 	return fmt.Sprintf("%s/%s", ModuleName, address)
 }
 
-func CreateDenomDescription(address string) string {
-	return fmt.Sprintf("Aiax representation of Ethereum ERC20 %s", address)
+func CreateDenomDescription(symbol string, name string, address string) string {
+	return fmt.Sprintf("Aiax ERC20 %s/%s/%s", symbol, name, address)
 }

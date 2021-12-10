@@ -6,17 +6,17 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
-func (k Keeper) bindExternalAndLocalTokens(ctx sdk.Context, externaAddress common.Address, localAddress common.Address) {
+func (k Keeper) bindExternalAndLocalTokens(ctx sdk.Context, extAddress common.Address, localAddress common.Address) {
 	store := ctx.KVStore(k.storeKey)
-	extKey := types.MakeExtERC20MappingKey(externaAddress)
+	extKey := types.MakeExtERC20MappingKey(extAddress)
 	localKey := types.MakeLocalERC20MappingKey(localAddress)
 	store.Set(extKey, localAddress.Bytes())
-	store.Set(localKey, externaAddress.Bytes())
+	store.Set(localKey, extAddress.Bytes())
 }
 
-func (k Keeper) ExternalERC20LocalLookup(ctx sdk.Context, externalAddress common.Address) (bool, common.Address) {
+func (k Keeper) ExternalERC20LocalLookup(ctx sdk.Context, extAddress common.Address) (bool, common.Address) {
 	store := ctx.KVStore(k.storeKey)
-	bytes := store.Get(types.MakeExtERC20MappingKey(externalAddress))
+	bytes := store.Get(types.MakeExtERC20MappingKey(extAddress))
 	if bytes == nil {
 		return false, common.Address{}
 	}

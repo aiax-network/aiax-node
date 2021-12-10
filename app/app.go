@@ -697,7 +697,7 @@ func NewAiax(
 		AddRoute(distrtypes.RouterKey, distr.NewCommunityPoolSpendProposalHandler(app.DistrKeeper)).
 		AddRoute(upgradetypes.RouterKey, upgrade.NewSoftwareUpgradeProposalHandler(app.UpgradeKeeper)).
 		AddRoute(ibchost.RouterKey, ibcclient.NewClientProposalHandler(app.IBCKeeper.ClientKeeper)).
-		AddRoute(irt.RouterKey, intrarelayer.NewIntrarelayerProposalHandler(app.IntrarelayerKeeper))
+		AddRoute(irt.RouterKey, intrarelayer.NewIntrarelayerProposalHandler(&app.IntrarelayerKeeper))
 
 	govKeeper := govkeeper.NewKeeper(
 		app.appCodec, keys[govtypes.StoreKey], app.GetSubspace(govtypes.ModuleName), app.AccountKeeper, app.BankKeeper,
@@ -736,7 +736,7 @@ func NewAiax(
 		keys[aiaxtypes.StoreKey],
 		app.appCodec,
 		app.GetSubspace(aiaxtypes.ModuleName),
-		app.AccountKeeper,
+		&app.AccountKeeper,
 		app.BankKeeper,
 		app.EvmKeeper,
     &app.GravityKeeper,
