@@ -13,11 +13,15 @@ func InitGenesis(
 	accKeeper authkeeper.AccountKeeper,
 	data types.GenesisState,
 ) {
+	log := ctx.Logger()
 	k.SetParams(ctx, data.Params)
 	// Get or create module account
-	if acc := accKeeper.GetModuleAccount(ctx, types.ModuleName); acc == nil {
+	acc := accKeeper.GetModuleAccount(ctx, types.ModuleName)
+	if acc == nil {
 		panic("Failed to init aiax-node module account")
 	}
+	log.Info("Module account Ethereum address: " + types.ModuleAddress.String())
+	log.Info("Module account Cosmos address: " + sdk.AccAddress(types.ModuleAddress.Bytes()).String())
 }
 
 func ExportGenesis(ctx sdk.Context, k keeper.Keeper) *types.GenesisState {

@@ -45,13 +45,13 @@ func (k Keeper) createCoinMetadata(ctx sdk.Context, evt gtypes.SendToCosmosEvent
 	return &metadata, nil
 }
 
-func (k Keeper) deployLocalERC20Contract(ctx sdk.Context, meta *banktypes.Metadata) (common.Address, error) {	
-  log := k.Logger(ctx)
+func (k Keeper) deployLocalERC20Contract(ctx sdk.Context, meta *banktypes.Metadata) (common.Address, error) {
+	log := k.Logger(ctx)
 	ctorArgs, err := contracts.ERC20BurnableAndMintableContract.ABI.Pack("", meta.Name, meta.Symbol)
-	if err != nil {    
-    err = sdkerrors.Wrapf(err, "coin metadata is invalid  %s", meta.Name)
-    log.Error(err.Error())
-		return common.Address{}, err 
+	if err != nil {
+		err = sdkerrors.Wrapf(err, "coin metadata is invalid  %s", meta.Name)
+		log.Error(err.Error())
+		return common.Address{}, err
 	}
 	data := make([]byte, len(contracts.ERC20BurnableAndMintableContract.Bin)+len(ctorArgs))
 	copy(data[:len(contracts.ERC20BurnableAndMintableContract.Bin)], contracts.ERC20BurnableAndMintableContract.Bin)
@@ -59,42 +59,40 @@ func (k Keeper) deployLocalERC20Contract(ctx sdk.Context, meta *banktypes.Metada
 
 	nonce, err := k.accKeeper.GetSequence(ctx, types.ModuleAddress.Bytes())
 	if err != nil {
-    log.Error(err.Error())
+		log.Error(err.Error())
 		return common.Address{}, err
 	}
 	contractAddr := crypto.CreateAddress(types.ModuleAddress, nonce)
 	_, err = k.irlKeeper.CallEVMWithPayload(ctx, types.ModuleAddress, nil, data)
 	if err != nil {
-    err = fmt.Errorf("failed to deploy contract for %s", meta.Name)
-    log.Error(err.Error())
+		err = fmt.Errorf("failed to deploy contract for %s", meta.Name)
+		log.Error(err.Error())
 		return common.Address{}, err
 	}
 	return contractAddr, nil
 }
 
 func (k Keeper) handleSendToCosmosEvent(ctx sdk.Context, evt gtypes.SendToCosmosEvent) (bool, error) {
-
 	log := k.Logger(ctx)
 
-  // TODO: Remove
-	log.Error(fmt.Sprintf("Got send to cosmos event: %+v", evt))
+	log.Info(fmt.Sprintf("Send to cosmos event: %+v", evt))
 
 	extAddress := common.HexToAddress(evt.TokenContract)
 	exist, localAddress := k.ExternalERC20LocalLookup(ctx, extAddress)
 
 	if !exist {
 		meta, err := k.createCoinMetadata(ctx, evt)
-		if err != nil {      
+		if err != nil {
 			return false, err
 		}
 		localAddress, err = k.deployLocalERC20Contract(ctx, meta)
-    if err != nil {
-      return false, err
-    }
+		if err != nil {
+			return false, err
+		}
 		k.bindExternalAndLocalTokens(ctx, extAddress, localAddress)
 		log.Info(fmt.Sprintf("Created ERC20 Contract Mapping %s => %s", extAddress.String(), localAddress.String()))
 	} else {
-		log.Info("ERC20 Contract Mapping %s => %s exists")
+		log.Info(fmt.Sprintf("ERC20 Contract Mapping %s => %s exists", extAddress.String(), localAddress.String()))
 	}
 
 	accAddress, err := sdk.AccAddressFromBech32(evt.CosmosReceiver)

@@ -148,6 +148,8 @@ require (
 	nhooyr.io/websocket v1.8.7 // indirect
 )
 
+replace github.com/cosmos/cosmos-sdk => ../cosmos-sdk
+
 replace github.com/peggyjv/gravity-bridge/module => ../gravity-bridge/module
 
 replace google.golang.org/grpc => google.golang.org/grpc v1.33.2
