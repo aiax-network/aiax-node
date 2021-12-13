@@ -7,6 +7,7 @@ require (
 	github.com/cosmos/ibc-go/v2 v2.0.1
 	github.com/ethereum/go-ethereum v1.10.11
 	github.com/gogo/protobuf v1.3.3
+	github.com/golang/protobuf v1.5.2
 	github.com/gorilla/mux v1.8.0
 	github.com/grpc-ecosystem/grpc-gateway v1.16.0
 	github.com/peggyjv/gravity-bridge/module v0.2.23
@@ -17,6 +18,8 @@ require (
 	github.com/tendermint/tm-db v0.6.4
 	github.com/tharsis/ethermint v0.9.0
 	github.com/tharsis/evmos v0.4.1
+	google.golang.org/genproto v0.0.0-20211208223120-3a66f561d7aa
+	google.golang.org/grpc v1.42.0
 )
 
 require (
@@ -62,7 +65,6 @@ require (
 	github.com/godbus/dbus v0.0.0-20190726142602-4481cbc300e2 // indirect
 	github.com/gogo/gateway v1.1.0 // indirect
 	github.com/golang/glog v0.0.0-20210429001901-424d2337a529 // indirect
-	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/google/btree v1.0.1 // indirect
 	github.com/google/orderedcode v0.0.1 // indirect
@@ -137,8 +139,6 @@ require (
 	golang.org/x/sys v0.0.0-20211111213525-f221eed1c01e // indirect
 	golang.org/x/term v0.0.0-20201126162022-7de9c90e9dd1 // indirect
 	golang.org/x/text v0.3.7 // indirect
-	google.golang.org/genproto v0.0.0-20211208223120-3a66f561d7aa // indirect
-	google.golang.org/grpc v1.42.0 // indirect
 	google.golang.org/protobuf v1.27.1 // indirect
 	gopkg.in/ini.v1 v1.63.2 // indirect
 	gopkg.in/natefinch/npipe.v2 v2.0.0-20160621034901-c1b8fa8bdcce // indirect

@@ -1,0 +1,35 @@
+syntax = "proto3";
+package aiax.v1;
+
+import "gogoproto/gogo.proto";
+import "google/api/annotations.proto";
+
+option go_package = "github.com/aiax-network/aiax-node/x/aiax/types";
+
+service Query {
+    
+  // Query address of the shadow Aiax ERC20 Token contract 
+  // representing Ethereum Mainnet contract specified by given address.
+  rpc ERC20Address(QueryERC20AddressRequest) returns (QueryERC20AddressResponse) {
+    option (google.api.http).get = "/aiax/erc20/{address}";
+  }
+}
+
+message QueryERC20AddressRequest {
+  option (gogoproto.equal) = false;
+  option (gogoproto.goproto_getters) = false;
+  
+  // Ethereum mainnet ERC20 contract address
+  string address = 1;  
+}
+
+message QueryERC20AddressResponse {
+  option (gogoproto.equal) = false;
+  option (gogoproto.goproto_getters) = false;
+  
+  // Aiax ERC20 shadow token address
+  string address = 1;  
+}
+
+
+
