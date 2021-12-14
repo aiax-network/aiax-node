@@ -1,6 +1,7 @@
 package aiax
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 
@@ -52,9 +53,11 @@ func (AppModuleBasic) ValidateGenesis(cdc codec.JSONCodec, config client.TxEncod
 	return gs.Validate()
 }
 
-func (AppModuleBasic) RegisterRESTRoutes(clientCtx client.Context, rtr *mux.Router) {}
+func (AppModuleBasic) RegisterRESTRoutes(ctx client.Context, rtr *mux.Router) {}
 
-func (b AppModuleBasic) RegisterGRPCGatewayRoutes(c client.Context, serveMux *runtime.ServeMux) {}
+func (b AppModuleBasic) RegisterGRPCGatewayRoutes(ctx client.Context, mux *runtime.ServeMux) {
+  types.RegisterQueryHandlerClient(context.Background(), mux, types.NewQueryClient(ctx))
+}
 
 func (AppModuleBasic) GetTxCmd() *cobra.Command {
 	return cli.NewTxCmd()
@@ -107,8 +110,8 @@ func (am AppModule) QuerierRoute() string {
 func (am AppModule) LegacyQuerierHandler(*codec.LegacyAmino) sdk.Querier {
 	return nil
 }
-func (am AppModule) RegisterServices(module.Configurator) {
-	// TODO: Aiax specific services
+func (am AppModule) RegisterServices(cfg module.Configurator) {
+  types.RegisterQueryServer(cfg.QueryServer(), am.keeper)
 }
 
 func (am AppModule) BeginBlock(sdk.Context, abci.RequestBeginBlock) {}

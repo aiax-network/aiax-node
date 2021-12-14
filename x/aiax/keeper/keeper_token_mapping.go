@@ -31,3 +31,4 @@ func (k Keeper) LocalERC20ExternalLookup(ctx sdk.Context, localAddress common.Ad
 	}
 	return true, common.BytesToAddress(bytes)
 }
+
