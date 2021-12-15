@@ -13,7 +13,7 @@ import (
 )
 
 var (
-  _ types.QueryServer = Keeper{}
+	_ types.QueryServer = Keeper{}
 )
 
 func (k Keeper) ERC20Address(ctx context.Context, req *types.QueryERC20AddressRequest) (*types.QueryERC20AddressResponse, error) {
