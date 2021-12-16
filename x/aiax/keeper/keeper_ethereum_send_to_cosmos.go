@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/aiax-network/aiax-node/x/aiax/types"
 	"github.com/aiax-network/aiax-node/x/aiax/types/contracts"
@@ -74,8 +75,14 @@ func (k Keeper) deployLocalERC20Contract(ctx sdk.Context, meta *banktypes.Metada
 
 func (k Keeper) handleSendToCosmosEvent(ctx sdk.Context, evt gtypes.SendToCosmosEvent) (bool, error) {
 	log := k.Logger(ctx)
+	params := k.GetParams(ctx)
 
 	log.Info(fmt.Sprintf("Send to cosmos event: %+v", evt))
+
+	if strings.ToLower(evt.TokenContract) == params.AiaxTokenContractAddress {
+		log.Info("Processing a native Aiax token transfer")
+		return false, nil
+	}
 
 	extAddress := common.HexToAddress(evt.TokenContract)
 	exist, localAddress := k.ExternalERC20LocalLookup(ctx, extAddress)

@@ -3,7 +3,9 @@ package types
 import (
 	"fmt"
 
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
+	"github.com/ethereum/go-ethereum/common"
 )
 
 var (
@@ -21,9 +23,9 @@ func NewParams(enableErc20Mapping bool) Params {
 }
 
 func DefaultParams() Params {
-  return Params{
-    EnableErc20Mapping: true,
-  }
+	return Params{
+		EnableErc20Mapping: true,
+	}
 }
 
 func validateBool(i interface{}) error {
@@ -41,6 +43,20 @@ func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 	}
 }
 
+func validateAiaxTokenContractAddress(i interface{}) error {
+	v, ok := i.(string)
+	if !ok {
+		return fmt.Errorf("invalid parameter of type: %T", i)
+	}
+	if !common.IsHexAddress(v) {
+		return fmt.Errorf("not an ethereum address: %s", v)
+	}
+	return nil
+}
+
 func (p Params) Validate() error {
+	if err := validateAiaxTokenContractAddress(p.AiaxTokenContractAddress); err != nil {
+		return sdkerrors.Wrap(err, "Address of Ethereum mainnet Aiax token.")
+	}
 	return nil
 }
