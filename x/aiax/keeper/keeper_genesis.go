@@ -8,6 +8,7 @@ import (
 func (k Keeper) InitGenesis(ctx sdk.Context, data types.GenesisState) {
 	log := ctx.Logger()
 	k.SetParams(ctx, data.Params)
+
 	// Get or create module account
 	acc := k.accKeeper.GetModuleAccount(ctx, types.ModuleName)
 	if acc == nil {

@@ -80,7 +80,7 @@ func (k Keeper) handleSendToCosmosEvent(ctx sdk.Context, evt gtypes.SendToCosmos
 	log.Info(fmt.Sprintf("Send to cosmos event: %+v", evt))
 
 	if strings.ToLower(evt.TokenContract) == params.AiaxTokenContractAddress {
-		log.Info("Processing a native Aiax token transfer")
+		log.Info(fmt.Sprintf("Native Aiax token transfer to %s", evt.CosmosReceiver))
 		return false, nil
 	}
 
@@ -116,8 +116,6 @@ func (k Keeper) handleSendToCosmosEvent(ctx sdk.Context, evt gtypes.SendToCosmos
 		return false, err
 	}
 
-	log.Info(fmt.Sprintf("Minted %v on %s to %s", evt.Amount, accAddress.String(), localAddress))
-
 	ctx.EventManager().EmitEvents(
 		sdk.Events{
 			sdk.NewEvent(
@@ -132,5 +130,6 @@ func (k Keeper) handleSendToCosmosEvent(ctx sdk.Context, evt gtypes.SendToCosmos
 		},
 	)
 
+	log.Info(fmt.Sprintf("Minted %v on %s to %s", evt.Amount, accAddress.String(), localAddress))
 	return true, nil
 }

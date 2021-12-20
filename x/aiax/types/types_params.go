@@ -10,21 +10,24 @@ import (
 
 var (
 	ParamStoreKeyEnableErc20Mapping = []byte("EnableErc20Mapping")
+  ParamStoreKeyAiaxTokenContractAddress = []byte("AiaxTokenContractAddress");
 )
 
 func ParamKeyTable() paramtypes.KeyTable {
 	return paramtypes.NewKeyTable().RegisterParamSet(&Params{})
 }
 
-func NewParams(enableErc20Mapping bool) Params {
+func NewParams(enableErc20Mapping bool, aiaxTokenContractAddress string) Params {
 	return Params{
 		EnableErc20Mapping: enableErc20Mapping,
+    AiaxTokenContractAddress: aiaxTokenContractAddress,
 	}
 }
 
 func DefaultParams() Params {
 	return Params{
 		EnableErc20Mapping: true,
+    AiaxTokenContractAddress: "",
 	}
 }
 
@@ -40,6 +43,7 @@ func validateBool(i interface{}) error {
 func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 	return paramtypes.ParamSetPairs{
 		paramtypes.NewParamSetPair(ParamStoreKeyEnableErc20Mapping, &p.EnableErc20Mapping, validateBool),
+    paramtypes.NewParamSetPair(ParamStoreKeyAiaxTokenContractAddress, &p.AiaxTokenContractAddress, validateAiaxTokenContractAddress),
 	}
 }
 

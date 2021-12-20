@@ -1,11 +1,14 @@
 package keeper
 
 import (
+	"strings"
+
+	"github.com/aiax-network/aiax-node/x/aiax/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-  "github.com/aiax-network/aiax-node/x/aiax/types"
 )
 
 func (k Keeper) SetParams(ctx sdk.Context, params types.Params) {
+  params.AiaxTokenContractAddress = strings.ToLower(params.AiaxTokenContractAddress)
   k.paramStore.SetParamSet(ctx, &params)
 }
 
