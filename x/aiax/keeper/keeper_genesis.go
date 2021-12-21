@@ -18,4 +18,5 @@ func (k Keeper) InitGenesis(ctx sdk.Context, data types.GenesisState) {
 	log.Info("Module account Cosmos address: " + sdk.AccAddress(types.ModuleAddress.Bytes()).String())
 	address := data.Params.AiaxTokenContractAddress
 	k.grvKeeper.SetCosmosOriginatedDenomToERC20(ctx, types.ModuleName, address)
+  k.grvKeeper.SetCosmosOriginatedMintableStatus(ctx, address, true)
 }
