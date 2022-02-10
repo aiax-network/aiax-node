@@ -7,7 +7,7 @@ import (
 
 const (
 	ModuleName = "aiax"
-	TokenMain  = ModuleName
+	TokenMain  = "aaiax"
 	StoreKey   = ModuleName
 	RouterKey  = ModuleName
 )
