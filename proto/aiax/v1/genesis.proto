@@ -14,7 +14,4 @@ message GenesisState {
 message Params {  
   // Enable automatic erc20 token mapping.
   bool enable_erc20_mapping = 1;
-  
-  // Address of Ethereum mainnet Aiax token.
-  string aiax_token_contract_address = 2;
 }
