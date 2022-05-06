@@ -76,14 +76,15 @@ func (k Keeper) handleSendToCosmosEvent(ctx sdk.Context, evt gtypes.SendToCosmos
 	log := k.Logger(ctx)
 	log.Info(fmt.Sprintf("Send to cosmos event: %+v", evt))
 
-	if evt.Native {
+	extAddress := common.HexToAddress(evt.TokenContract)
+
+	// TODO: Scan for all native tokens
+	aiaxContract, exists := k.grvKeeper.GetCosmosOriginatedERC20(ctx, types.TokenMain)
+	if exists && extAddress == aiaxContract {
 		log.Info(fmt.Sprintf("Native Aiax token transfer to %s", evt.CosmosReceiver))
-    // TODO: Review
-    k.grvKeeper.SetCosmosOriginatedDenomToERC20(ctx, types.TokenMain, evt.TokenContract)
 		return false, nil
 	}
 
-	extAddress := common.HexToAddress(evt.TokenContract)
 	exist, localAddress := k.ExternalERC20LocalLookup(ctx, extAddress)
 
 	if !exist {
