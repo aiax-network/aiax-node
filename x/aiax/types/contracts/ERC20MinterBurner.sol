@@ -9,12 +9,24 @@ import '@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol';
  * The account that deploys the contract can mint and burn.
  */
 contract ERC20MinterBurner is Ownable, ERC20Burnable {
+    uint8 private _decimals;
+
     /**
      * @dev
      *
      * See {ERC20-constructor}.
      */
-    constructor(string memory name, string memory symbol) ERC20(name, symbol) {}
+    constructor(
+        string memory name,
+        string memory symbol,
+        uint8 decimals_
+    ) ERC20(name, symbol) {
+        _decimals = decimals_;
+    }
+
+    function decimals() public view virtual override returns (uint8) {
+        return _decimals;
+    }
 
     /**
      * @dev Creates `amount` new tokens for `to`.
