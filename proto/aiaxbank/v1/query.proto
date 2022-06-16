@@ -1,0 +1,26 @@
+syntax = "proto3";
+package aiaxbank.v1;
+
+import "gogoproto/gogo.proto";
+import "google/api/annotations.proto";
+
+option go_package = "github.com/aiax-network/aiax-node/x/aiaxbank/types";
+
+service Query {
+  rpc DenomRepresentation(QueryDenomRepresentationRequest) returns (QueryDenomRepresentationResponse) {
+    option (google.api.http).get = "/aiaxbank/v1/denom_repr/{denom}";
+  }
+}
+
+message QueryDenomRepresentationRequest {
+  option (gogoproto.equal) = false;
+  option (gogoproto.goproto_getters) = false;
+  string denom = 1;
+}
+
+message QueryDenomRepresentationResponse {
+  option (gogoproto.equal) = false;
+  option (gogoproto.goproto_getters) = false;
+  string external_address = 1;
+  string internal_address = 2;
+}

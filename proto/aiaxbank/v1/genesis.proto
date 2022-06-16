@@ -1,0 +1,7 @@
+syntax = "proto3";
+package aiaxbank.v1;
+
+import "gogoproto/gogo.proto";
+option go_package = "github.com/aiax-network/aiax-node/x/aiaxbank/types";
+
+message GenesisState {}

@@ -6,10 +6,10 @@ import (
 )
 
 func (k Keeper) HandleEthereumEvent(ctx sdk.Context, eve gtypes.EthereumEvent) (bool, error) {
-	switch event := eve.(type) {
-	case *gtypes.SendToCosmosEvent:
-		return k.handleSendToCosmosEvent(ctx, *event)
-	}
+	// switch event := eve.(type) {
+	// case *gtypes.SendToCosmosEvent:
+	// 	return k.handleSendToCosmosEvent(ctx, *event)
+	// }
 
 	return false, nil
 }

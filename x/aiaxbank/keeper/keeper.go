@@ -3,8 +3,7 @@ package keeper
 import (
 	"fmt"
 
-	"github.com/aiax-network/aiax-node/x/aiax/types"
-	aiaxbankkeeper "github.com/aiax-network/aiax-node/x/aiaxbank/keeper"
+	"github.com/aiax-network/aiax-node/x/aiaxbank/types"
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	acckeeper "github.com/cosmos/cosmos-sdk/x/auth/keeper"
@@ -24,13 +23,8 @@ type Keeper struct {
 	accKeeper *acckeeper.AccountKeeper
 	banKeeper bankeeper.Keeper
 	evmKeeper *evmkeeper.Keeper
-	grvKeeper *grvkeeper.Keeper
 	irlKeeper *irlkeeper.Keeper
-	aibKeeper *aiaxbankkeeper.Keeper
-}
-
-func (k Keeper) GetAccountKeeper() acckeeper.AccountKeeper {
-	return *k.accKeeper
+	grvKeeper *grvkeeper.Keeper
 }
 
 func NewKeeper(
@@ -40,13 +34,8 @@ func NewKeeper(
 	accKeeper *acckeeper.AccountKeeper,
 	banKeeper bankeeper.Keeper,
 	evmKeeper *evmkeeper.Keeper,
-	grvKeeper *grvkeeper.Keeper,
 	irlKeeper *irlkeeper.Keeper,
-	aibKeeper *aiaxbankkeeper.Keeper,
 ) Keeper {
-	if !ps.HasKeyTable() {
-		ps = ps.WithKeyTable(types.ParamKeyTable())
-	}
 	keeper := Keeper{
 		storeKey:   storeKey,
 		cdc:        cdc,
@@ -54,13 +43,15 @@ func NewKeeper(
 		accKeeper:  accKeeper,
 		banKeeper:  banKeeper,
 		evmKeeper:  evmKeeper,
-		grvKeeper:  grvKeeper,
 		irlKeeper:  irlKeeper,
-		aibKeeper:  aibKeeper,
 	}
-	// grvKeeper.SetEthereumEventsHook(keeper)
 
 	return keeper
+}
+
+func (k Keeper) AttachGravity(grvKeeper *grvkeeper.Keeper) {
+	k.grvKeeper = grvKeeper
+	k.grvKeeper.SetEthereumEventsHook(k)
 }
 
 func (k Keeper) Logger(ctx sdk.Context) log.Logger {

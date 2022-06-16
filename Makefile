@@ -83,7 +83,7 @@ proto-all: proto-format proto-lint proto-gen
 
 proto-gen:
 	@echo "Generating Protobuf files"
-	$(DOCKER) run --rm -v $(CURDIR):/workspace --workdir /workspace tendermintdev/sdk-proto-gen sh ./scripts/protocgen.sh
+	$(DOCKER) run --rm -v $(CURDIR):/workspace -v $(CURDIR)/../cosmos-sdk:/cosmos-sdk -v $(CURDIR)/../gravity-bridge:/gravity-bridge --workdir /workspace tendermintdev/sdk-proto-gen:v0.2 sh ./scripts/protocgen.sh
 
 proto-swagger-gen:
 	@echo "Generating Protobuf Swagger"

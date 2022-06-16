@@ -3,11 +3,10 @@ package aiax
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 
-	cli "github.com/aiax-network/aiax-node/x/aiax/client"
-	"github.com/aiax-network/aiax-node/x/aiax/keeper"
-	"github.com/aiax-network/aiax-node/x/aiax/types"
+	// cli "github.com/aiax-network/aiax-node/x/aiax/client"
+	"github.com/aiax-network/aiax-node/x/aiaxbank/keeper"
+	"github.com/aiax-network/aiax-node/x/aiaxbank/types"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
@@ -38,19 +37,15 @@ func (AppModuleBasic) ConsensusVersion() uint64 {
 }
 
 func (AppModuleBasic) RegisterInterfaces(interfaceRegistry codectypes.InterfaceRegistry) {
-	types.RegisterInterfaces(interfaceRegistry)
+	// types.RegisterInterfaces(interfaceRegistry)
 }
 
 func (AppModuleBasic) DefaultGenesis(cdc codec.JSONCodec) json.RawMessage {
-	return cdc.MustMarshalJSON(types.DefaultGenesisState())
+	return cdc.MustMarshalJSON(&types.GenesisState{})
 }
 
 func (AppModuleBasic) ValidateGenesis(cdc codec.JSONCodec, config client.TxEncodingConfig, bz json.RawMessage) error {
-	var gs types.GenesisState
-	if err := cdc.UnmarshalJSON(bz, &gs); err != nil {
-		return fmt.Errorf("failed to unmarshal %s genesis state: %w", types.ModuleName, err)
-	}
-	return gs.Validate()
+	return nil
 }
 
 func (AppModuleBasic) RegisterRESTRoutes(ctx client.Context, rtr *mux.Router) {}
@@ -60,11 +55,13 @@ func (b AppModuleBasic) RegisterGRPCGatewayRoutes(ctx client.Context, mux *runti
 }
 
 func (AppModuleBasic) GetTxCmd() *cobra.Command {
-	return cli.NewTxCmd()
+	return nil
+	// return cli.NewTxCmd()
 }
 
 func (AppModuleBasic) GetQueryCmd() *cobra.Command {
-	return cli.GetQueryCmd()
+	return nil
+	// return cli.GetQueryCmd()
 }
 
 type AppModule struct {
@@ -84,13 +81,13 @@ func NewAppModule(
 func (am AppModule) InitGenesis(ctx sdk.Context, cdc codec.JSONCodec, data json.RawMessage) []abci.ValidatorUpdate {
 	var gs types.GenesisState
 	cdc.MustUnmarshalJSON(data, &gs)
-	InitGenesis(ctx, am.keeper, gs)
+	am.keeper.InitGenesis(ctx, gs)
 	return []abci.ValidatorUpdate{}
 }
 
 func (am AppModule) ExportGenesis(ctx sdk.Context, cdc codec.JSONCodec) json.RawMessage {
-	gs := ExportGenesis(ctx, am.keeper)
-	return cdc.MustMarshalJSON(gs)
+	gs := types.GenesisState{}
+	return cdc.MustMarshalJSON(&gs)
 }
 
 func (AppModule) Name() string {

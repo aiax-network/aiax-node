@@ -3,8 +3,8 @@ package keeper
 import (
 	"fmt"
 
-	"github.com/aiax-network/aiax-node/x/aiax/types"
 	"github.com/aiax-network/aiax-node/x/aiax/types/contracts"
+	"github.com/aiax-network/aiax-node/x/aiaxbank/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
@@ -13,18 +13,28 @@ import (
 	gtypes "github.com/peggyjv/gravity-bridge/module/x/gravity/types"
 )
 
+func (k Keeper) HandleEthereumEvent(ctx sdk.Context, eve gtypes.EthereumEvent) (bool, error) {
+	switch event := eve.(type) {
+	case *gtypes.SendToCosmosEvent:
+		return k.handleSendToCosmosEvent(ctx, *event)
+	}
+
+	return false, nil
+}
+
 func (k Keeper) createCoinMetadata(ctx sdk.Context, evt gtypes.SendToCosmosEvent) (*banktypes.Metadata, error) {
-	_, found := k.banKeeper.GetDenomMetaData(ctx, types.CreateDenom(evt.TokenContract))
+	denom := types.CreateDenom("eth", evt.TokenContract)
+	_, found := k.banKeeper.GetDenomMetaData(ctx, denom)
 	if found {
 		return nil, sdkerrors.Wrapf(types.ErrTokenMapping, "token denom meta is already registered for: %s", evt.TokenContract)
 	}
 
 	metadata := banktypes.Metadata{
 		Description: types.CreateDenomDescription(evt.Symbol, evt.Name, evt.TokenContract),
-		Base:        types.CreateDenom(evt.TokenContract),
+		Base:        denom,
 		DenomUnits: []*banktypes.DenomUnit{
 			{
-				Denom:    types.CreateDenom(evt.TokenContract),
+				Denom:    denom,
 				Exponent: 0,
 			},
 			{
@@ -32,7 +42,7 @@ func (k Keeper) createCoinMetadata(ctx sdk.Context, evt gtypes.SendToCosmosEvent
 				Exponent: evt.Decimals,
 			},
 		},
-		Name:    types.CreateDenom(evt.TokenContract),
+		Name:    denom,
 		Symbol:  evt.Symbol,
 		Display: evt.Symbol,
 	}
@@ -85,64 +95,27 @@ func (k Keeper) handleSendToCosmosEvent(ctx sdk.Context, evt gtypes.SendToCosmos
 		return false, nil
 	}
 
-	// TODO: Scan for all native tokens
 	aiaxContract, exists = k.grvKeeper.GetCosmosOriginatedERC20(ctx, "eth/"+extAddress.Hex())
 	if exists && extAddress == aiaxContract {
 		log.Info(fmt.Sprintf("Matched ERC20 token transfer to %s", evt.CosmosReceiver))
 		return false, nil
 	}
 
-	exist, localAddress := k.ExternalERC20LocalLookup(ctx, extAddress)
-
-	if !exist {
-		meta, err := k.createCoinMetadata(ctx, evt)
-		if err != nil {
-			return false, err
-		}
-		localAddress, err = k.deployLocalERC20Contract(ctx, meta)
-		if err != nil {
-			return false, err
-		}
-		k.bindExternalAndLocalTokens(ctx, extAddress, localAddress)
-		log.Info(fmt.Sprintf("Created ERC20 Contract Mapping %s => %s", extAddress.String(), localAddress.String()))
-
-		k.aibKeeper.BindExternalAndLocalTokens(ctx, extAddress, localAddress)
-		k.grvKeeper.SetCosmosOriginatedDenomToERC20(ctx, "eth/"+extAddress.Hex(), extAddress.Hex())
-		k.grvKeeper.SetCosmosOriginatedMintableStatus(ctx, extAddress.Hex(), true)
-	} else {
-		log.Info(fmt.Sprintf("ERC20 Contract Mapping %s => %s exists", extAddress.String(), localAddress.String()))
+	meta, err := k.createCoinMetadata(ctx, evt)
+	if err != nil {
+		return false, err
 	}
 
+	localAddress, err := k.deployLocalERC20Contract(ctx, meta)
+	if err != nil {
+		return false, err
+	}
+
+	k.BindExternalAndLocalTokens(ctx, extAddress, localAddress)
+	k.grvKeeper.SetCosmosOriginatedDenomToERC20(ctx, "eth/"+extAddress.Hex(), extAddress.Hex())
+	k.grvKeeper.SetCosmosOriginatedMintableStatus(ctx, extAddress.Hex(), true)
+
+	log.Info(fmt.Sprintf("Created ERC20 token for eth/%s", extAddress.Hex()))
+
 	return false, nil
-
-	// accAddress, err := sdk.AccAddressFromBech32(evt.CosmosReceiver)
-	// if err != nil {
-	// 	return false, err
-	// }
-	// receiver := common.BytesToAddress(accAddress.Bytes())
-
-	// // Mint required amount of local tokens
-	// _, err = k.irlKeeper.CallEVM(
-	// 	ctx, contracts.ERC20BurnableAndMintableContract.ABI, types.ModuleAddress,
-	// 	localAddress, "mint", receiver, evt.Amount.BigInt())
-	// if err != nil {
-	// 	return false, err
-	// }
-
-	// ctx.EventManager().EmitEvents(
-	// 	sdk.Events{
-	// 		sdk.NewEvent(
-	// 			types.EventTypeMintShadowERC20,
-	// 			sdk.NewAttribute(sdk.AttributeKeySender, evt.EthereumSender),
-	// 			sdk.NewAttribute(types.AttributeKeyCosmosReceiver, evt.CosmosReceiver),
-	// 			sdk.NewAttribute(sdk.AttributeKeyAmount, evt.Amount.String()),
-	// 			sdk.NewAttribute(types.AttributeKeyERC20Address, evt.TokenContract),
-	// 			sdk.NewAttribute(types.AttributeKeyERC20LocalAddress, localAddress.String()),
-	// 			sdk.NewAttribute(types.AttributeKeyERC20Symbol, evt.Symbol),
-	// 		),
-	// 	},
-	// )
-
-	// log.Info(fmt.Sprintf("Minted %v on %s to %s", evt.Amount, accAddress.String(), localAddress))
-	return true, nil
 }

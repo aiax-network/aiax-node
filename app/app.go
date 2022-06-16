@@ -12,6 +12,9 @@ import (
 	aiax "github.com/aiax-network/aiax-node/x/aiax"
 	aiaxkeeper "github.com/aiax-network/aiax-node/x/aiax/keeper"
 	aiaxtypes "github.com/aiax-network/aiax-node/x/aiax/types"
+	aiaxbank "github.com/aiax-network/aiax-node/x/aiaxbank"
+	aiaxbankkeeper "github.com/aiax-network/aiax-node/x/aiaxbank/keeper"
+	aiaxbanktypes "github.com/aiax-network/aiax-node/x/aiaxbank/types"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/grpc/tmservice"
@@ -59,6 +62,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/gov"
 	govkeeper "github.com/cosmos/cosmos-sdk/x/gov/keeper"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
+
 	//"github.com/cosmos/cosmos-sdk/x/mint"
 	//mintkeeper "github.com/cosmos/cosmos-sdk/x/mint/keeper"
 	//minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
@@ -158,6 +162,7 @@ var (
 		feemarket.AppModuleBasic{},
 		intrarelayer.AppModuleBasic{},
 		aiax.AppModuleBasic{},
+		aiaxbank.AppModuleBasic{},
 	)
 
 	maccPerms = map[string][]string{
@@ -172,6 +177,7 @@ var (
 		evmtypes.ModuleName:            {authtypes.Minter, authtypes.Burner}, // used for secure addition and subtraction of balance using module account
 		irt.ModuleName:                 {authtypes.Minter, authtypes.Burner},
 		aiaxtypes.ModuleName:           {authtypes.Minter, authtypes.Burner},
+		aiaxbanktypes.ModuleName:       {authtypes.Minter, authtypes.Burner},
 	}
 
 	// module accounts that are allowed to receive tokens
@@ -232,7 +238,8 @@ type Aiax struct {
 	IntrarelayerKeeper irk.Keeper
 
 	// Aiax keeper
-	AiaxKeeper aiaxkeeper.Keeper
+	AiaxKeeper     aiaxkeeper.Keeper
+	AiaxBankKeeper aiaxbankkeeper.Keeper
 
 	// the module manager
 	mm *module.Manager
@@ -611,6 +618,7 @@ func NewAiax(
 		evmtypes.StoreKey, feemarkettypes.StoreKey,
 		irt.StoreKey,
 		aiaxtypes.StoreKey,
+		aiaxbanktypes.StoreKey,
 	)
 
 	tkeys := sdk.NewTransientStoreKeys(paramstypes.TStoreKey, evmtypes.TransientKey)
@@ -669,16 +677,6 @@ func NewAiax(
 	app.AuthzKeeper = authzkeeper.NewKeeper(keys[authzkeeper.StoreKey], app.appCodec, app.BaseApp.MsgServiceRouter())
 	tracer := cast.ToString(appOpts.Get(srvflags.EVMTracer))
 
-	app.GravityKeeper = gravitykeeper.NewKeeper(
-		app.appCodec, keys[gravitytypes.StoreKey], app.GetSubspace(gravitytypes.ModuleName), app.AccountKeeper,
-		app.StakingKeeper, app.BankKeeper, app.SlashingKeeper, sdk.DefaultPowerReduction,
-	)
-	app.GravityKeeper.SetHooks(
-		gravitytypes.NewMultiGravityHooks(
-		// TODO:
-		),
-	)
-
 	app.FeeMarketKeeper = feemarketkeeper.NewKeeper(
 		app.appCodec, keys[feemarkettypes.StoreKey], app.GetSubspace(feemarkettypes.ModuleName),
 	)
@@ -732,6 +730,24 @@ func NewAiax(
 		app.appCodec, keys[evidencetypes.StoreKey], &app.StakingKeeper, app.SlashingKeeper,
 	)
 
+	app.AiaxBankKeeper = aiaxbankkeeper.NewKeeper(keys[aiaxbanktypes.StoreKey],
+		app.appCodec,
+		app.GetSubspace(aiaxtypes.ModuleName),
+		&app.AccountKeeper,
+		app.BankKeeper,
+		app.EvmKeeper,
+		&app.IntrarelayerKeeper)
+
+	app.GravityKeeper = gravitykeeper.NewKeeper(
+		app.appCodec, keys[gravitytypes.StoreKey], app.GetSubspace(gravitytypes.ModuleName), app.AccountKeeper,
+		app.StakingKeeper, app.AiaxBankKeeper, app.SlashingKeeper, sdk.DefaultPowerReduction,
+	)
+	app.GravityKeeper.SetHooks(
+		gravitytypes.NewMultiGravityHooks(),
+	)
+
+	app.AiaxBankKeeper.AttachGravity(&app.GravityKeeper)
+
 	app.AiaxKeeper = aiaxkeeper.NewKeeper(
 		keys[aiaxtypes.StoreKey],
 		app.appCodec,
@@ -741,6 +757,7 @@ func NewAiax(
 		app.EvmKeeper,
 		&app.GravityKeeper,
 		&app.IntrarelayerKeeper,
+		&app.AiaxBankKeeper,
 	)
 
 	skipGenesisInvariants := cast.ToBool(appOpts.Get(crisis.FlagSkipGenesisInvariants))
@@ -773,6 +790,7 @@ func NewAiax(
 		feemarket.NewAppModule(app.FeeMarketKeeper),
 		intrarelayer.NewAppModule(app.IntrarelayerKeeper, app.AccountKeeper),
 		aiax.NewAppModule(app.AiaxKeeper),
+		aiaxbank.NewAppModule(app.AiaxBankKeeper),
 	)
 
 	// During begin block slashing happens after distr.BeginBlocker so that
@@ -832,6 +850,7 @@ func NewAiax(
 		feemarkettypes.ModuleName,
 		irt.ModuleName,
 		aiaxtypes.ModuleName,
+		aiaxbanktypes.ModuleName,
 		// NOTE: crisis module must go at the end to check for invariants on each module
 		crisistypes.ModuleName,
 	)
