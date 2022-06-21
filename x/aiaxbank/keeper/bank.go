@@ -50,6 +50,28 @@ func (k Keeper) SendCoinsFromModuleToModule(ctx sdk.Context, senderModule, recip
 }
 
 func (k Keeper) SendCoinsFromAccountToModule(ctx sdk.Context, senderAddr sdk.AccAddress, recipientModule string, amt sdk.Coins) error {
+	if strings.HasPrefix(amt[0].Denom, "eth/") {
+		contract := common.HexToAddress(amt[0].Denom[4:])
+		exists, contract := k.ExternalERC20LocalLookup(ctx, contract)
+
+		if exists {
+			senderAcc := k.accKeeper.GetModuleAccount(ctx, recipientModule)
+			if senderAcc == nil {
+				panic(sdkerrors.Wrapf(sdkerrors.ErrUnknownAddress, "module account %s does not exist", recipientModule))
+			}
+
+			localAddr := senderAcc.GetAddress()
+			sender := common.BytesToAddress(localAddr.Bytes())
+
+			receiver := common.BytesToAddress(senderAddr.Bytes())
+
+			_, err := k.irlKeeper.CallEVM(
+				ctx, contracts.ERC20BurnableAndMintableContract.ABI, receiver,
+				contract, "transfer", sender, amt[0].Amount.BigInt())
+			// TODO: does not fail on non existing contract
+			return err
+		}
+	}
 	return k.banKeeper.SendCoinsFromAccountToModule(ctx, senderAddr, recipientModule, amt)
 }
 
@@ -78,6 +100,26 @@ func (k Keeper) MintCoins(ctx sdk.Context, name string, amt sdk.Coins) error {
 }
 
 func (k Keeper) BurnCoins(ctx sdk.Context, name string, amt sdk.Coins) error {
+	if strings.HasPrefix(amt[0].Denom, "eth/") {
+		contract := common.HexToAddress(amt[0].Denom[4:])
+		exists, contract := k.ExternalERC20LocalLookup(ctx, contract)
+
+		if exists {
+			recipientAcc := k.accKeeper.GetModuleAccount(ctx, name)
+			if recipientAcc == nil {
+				panic(sdkerrors.Wrapf(sdkerrors.ErrUnknownAddress, "module account %s does not exist", name))
+			}
+
+			localAddr := recipientAcc.GetAddress()
+			receiver := common.BytesToAddress(localAddr.Bytes())
+
+			_, err := k.irlKeeper.CallEVM(
+				ctx, contracts.ERC20BurnableAndMintableContract.ABI, types.ModuleAddress,
+				contract, "burn", receiver, amt[0].Amount.BigInt())
+			return err
+		}
+	}
+
 	return k.banKeeper.BurnCoins(ctx, name, amt)
 }
 

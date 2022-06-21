@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.8.0 <0.9.0;
 import '@openzeppelin/contracts/access/Ownable.sol';
-import '@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol';
+import '@openzeppelin/contracts/token/ERC20/ERC20.sol';
 
 /**
  * @dev {ERC20} token, including:
  *
  * The account that deploys the contract can mint and burn.
  */
-contract ERC20MinterBurner is Ownable, ERC20Burnable {
+contract ERC20MinterBurner is Ownable, ERC20 {
     /**
      * @dev
      *
