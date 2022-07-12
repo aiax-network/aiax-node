@@ -57,9 +57,11 @@ func (k Keeper) createCoinMetadata(ctx sdk.Context, evt gtypes.SendToCosmosEvent
 
 func (k Keeper) deployLocalERC20Contract(ctx sdk.Context, meta *banktypes.Metadata) (common.Address, error) {
 	log := k.Logger(ctx)
-	ctorArgs, err := contracts.ERC20BurnableAndMintableContract.ABI.Pack("", meta.Name, meta.Symbol)
+	// Create constructor arguments with Name Symbol and Decimals (line 32 in this file) from event in gravity bridge
+	decimals := uint8(meta.DenomUnits[1].Exponent)
+	ctorArgs, err := contracts.ERC20BurnableAndMintableContract.ABI.Pack("", meta.Name, meta.Symbol, decimals)
 	if err != nil {
-		err = sdkerrors.Wrapf(err, "coin metadata is invalid  %s", meta.Name)
+		err = sdkerrors.Wrapf(err, "coin metadata is invalid %s", meta.Name)
 		log.Error(err.Error())
 		return common.Address{}, err
 	}
