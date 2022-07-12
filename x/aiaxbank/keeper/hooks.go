@@ -3,8 +3,8 @@ package keeper
 import (
 	"fmt"
 
-	"github.com/aiax-network/aiax-node/x/aiax/types/contracts"
 	"github.com/aiax-network/aiax-node/x/aiaxbank/types"
+	"github.com/aiax-network/aiax-node/x/aiaxbank/types/contracts"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"

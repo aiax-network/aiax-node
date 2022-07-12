@@ -9,9 +9,6 @@ import (
 	"encoding/json"
 	"path/filepath"
 
-	aiax "github.com/aiax-network/aiax-node/x/aiax"
-	aiaxkeeper "github.com/aiax-network/aiax-node/x/aiax/keeper"
-	aiaxtypes "github.com/aiax-network/aiax-node/x/aiax/types"
 	aiaxbank "github.com/aiax-network/aiax-node/x/aiaxbank"
 	aiaxbankkeeper "github.com/aiax-network/aiax-node/x/aiaxbank/keeper"
 	aiaxbanktypes "github.com/aiax-network/aiax-node/x/aiaxbank/types"
@@ -161,7 +158,6 @@ var (
 		evm.AppModuleBasic{},
 		feemarket.AppModuleBasic{},
 		intrarelayer.AppModuleBasic{},
-		aiax.AppModuleBasic{},
 		aiaxbank.AppModuleBasic{},
 	)
 
@@ -176,7 +172,6 @@ var (
 		gravitytypes.ModuleName:        {authtypes.Minter, authtypes.Burner},
 		evmtypes.ModuleName:            {authtypes.Minter, authtypes.Burner}, // used for secure addition and subtraction of balance using module account
 		irt.ModuleName:                 {authtypes.Minter, authtypes.Burner},
-		aiaxtypes.ModuleName:           {authtypes.Minter, authtypes.Burner},
 		aiaxbanktypes.ModuleName:       {authtypes.Minter, authtypes.Burner},
 	}
 
@@ -238,7 +233,6 @@ type Aiax struct {
 	IntrarelayerKeeper irk.Keeper
 
 	// Aiax keeper
-	AiaxKeeper     aiaxkeeper.Keeper
 	AiaxBankKeeper aiaxbankkeeper.Keeper
 
 	// the module manager
@@ -341,10 +335,6 @@ func (app *Aiax) GetIBCKeeper() *ibckeeper.Keeper {
 
 func (app *Aiax) GetScopedIBCKeeper() capabilitykeeper.ScopedKeeper {
 	return app.ScopedIBCKeeper
-}
-
-func (app *Aiax) GetKeeper() *aiaxkeeper.Keeper {
-	return &app.AiaxKeeper
 }
 
 func (app *Aiax) GetTxConfig() client.TxConfig {
@@ -571,7 +561,6 @@ func initParamsKeeper(
 	paramsKeeper.Subspace(evmtypes.ModuleName)
 	paramsKeeper.Subspace(feemarkettypes.ModuleName)
 	paramsKeeper.Subspace(irt.ModuleName)
-	paramsKeeper.Subspace(aiaxtypes.ModuleName)
 
 	return paramsKeeper
 }
@@ -617,7 +606,6 @@ func NewAiax(
 		gravitytypes.StoreKey,
 		evmtypes.StoreKey, feemarkettypes.StoreKey,
 		irt.StoreKey,
-		aiaxtypes.StoreKey,
 		aiaxbanktypes.StoreKey,
 	)
 
@@ -730,13 +718,15 @@ func NewAiax(
 		app.appCodec, keys[evidencetypes.StoreKey], &app.StakingKeeper, app.SlashingKeeper,
 	)
 
-	app.AiaxBankKeeper = aiaxbankkeeper.NewKeeper(keys[aiaxbanktypes.StoreKey],
+	app.AiaxBankKeeper = aiaxbankkeeper.NewKeeper(
+		keys[aiaxbanktypes.StoreKey],
 		app.appCodec,
-		app.GetSubspace(aiaxtypes.ModuleName),
+		app.GetSubspace(aiaxbanktypes.ModuleName),
 		&app.AccountKeeper,
 		app.BankKeeper,
 		app.EvmKeeper,
-		&app.IntrarelayerKeeper)
+		&app.IntrarelayerKeeper,
+	)
 
 	app.GravityKeeper = gravitykeeper.NewKeeper(
 		app.appCodec, keys[gravitytypes.StoreKey], app.GetSubspace(gravitytypes.ModuleName), app.AccountKeeper,
@@ -747,18 +737,6 @@ func NewAiax(
 	)
 
 	app.AiaxBankKeeper.AttachGravity(&app.GravityKeeper)
-
-	app.AiaxKeeper = aiaxkeeper.NewKeeper(
-		keys[aiaxtypes.StoreKey],
-		app.appCodec,
-		app.GetSubspace(aiaxtypes.ModuleName),
-		&app.AccountKeeper,
-		app.BankKeeper,
-		app.EvmKeeper,
-		&app.GravityKeeper,
-		&app.IntrarelayerKeeper,
-		&app.AiaxBankKeeper,
-	)
 
 	skipGenesisInvariants := cast.ToBool(appOpts.Get(crisis.FlagSkipGenesisInvariants))
 
@@ -789,7 +767,6 @@ func NewAiax(
 		evm.NewAppModule(app.EvmKeeper, app.AccountKeeper),
 		feemarket.NewAppModule(app.FeeMarketKeeper),
 		intrarelayer.NewAppModule(app.IntrarelayerKeeper, app.AccountKeeper),
-		aiax.NewAppModule(app.AiaxKeeper),
 		aiaxbank.NewAppModule(app.AiaxBankKeeper),
 	)
 
@@ -802,7 +779,6 @@ func NewAiax(
 	app.mm.SetOrderBeginBlockers(
 		upgradetypes.ModuleName,
 		capabilitytypes.ModuleName,
-		aiaxtypes.ModuleName,
 		gravitytypes.ModuleName,
 		evmtypes.ModuleName,
 		//minttypes.ModuleName,
@@ -821,7 +797,6 @@ func NewAiax(
 		gravitytypes.ModuleName,
 		evmtypes.ModuleName,
 		feemarkettypes.ModuleName,
-		aiaxtypes.ModuleName,
 	)
 
 	// NOTE: The genutils module must occur after staking so that pools are
@@ -849,7 +824,6 @@ func NewAiax(
 		evmtypes.ModuleName,
 		feemarkettypes.ModuleName,
 		irt.ModuleName,
-		aiaxtypes.ModuleName,
 		aiaxbanktypes.ModuleName,
 		// NOTE: crisis module must go at the end to check for invariants on each module
 		crisistypes.ModuleName,

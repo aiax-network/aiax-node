@@ -3,14 +3,15 @@ package keeper
 import (
 	"strings"
 
-	"github.com/aiax-network/aiax-node/x/aiax/types/contracts"
 	"github.com/aiax-network/aiax-node/x/aiaxbank/types"
+	"github.com/aiax-network/aiax-node/x/aiaxbank/types/contracts"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	bank "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/ethereum/go-ethereum/common"
 )
 
+// TODO: support "eth/" and "aiax/"
 // TODO: go over all 'amt' values (for all functions)
 // TODO: safety checks as in banKeeper (for all functions)
 

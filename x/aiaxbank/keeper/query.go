@@ -33,6 +33,8 @@ func (k Keeper) DenomRepresentation(ctx context.Context, req *types.QueryDenomRe
 		}
 	}
 
+	// TODO: support "aiax/" notation
+
 	// TODO: uncomment, it panics with "runtime error: invalid memory address or nil pointer dereference"
 	// external, exists := k.grvKeeper.GetCosmosOriginatedERC20(uctx, req.Denom)
 	// if exists {
