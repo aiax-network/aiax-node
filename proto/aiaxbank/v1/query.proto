@@ -8,7 +8,7 @@ option go_package = "github.com/aiax-network/aiax-node/x/aiaxbank/types";
 
 service Query {
   rpc DenomRepresentation(QueryDenomRepresentationRequest) returns (QueryDenomRepresentationResponse) {
-    option (google.api.http).get = "/aiaxbank/v1/denom_repr/{denom}";
+    option (google.api.http).get = "/aiaxbank/v1/denom_repr";
   }
 }
 
