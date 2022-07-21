@@ -9,6 +9,9 @@ import (
 	"encoding/json"
 	"path/filepath"
 
+	aiaxbackbridge "github.com/aiax-network/aiax-node/x/aiaxbackbridge"
+	aiaxbackbridgekeeper "github.com/aiax-network/aiax-node/x/aiaxbackbridge/keeper"
+	aiaxbackbridgetypes "github.com/aiax-network/aiax-node/x/aiaxbackbridge/types"
 	aiaxbank "github.com/aiax-network/aiax-node/x/aiaxbank"
 	aiaxbankkeeper "github.com/aiax-network/aiax-node/x/aiaxbank/keeper"
 	aiaxbanktypes "github.com/aiax-network/aiax-node/x/aiaxbank/types"
@@ -159,6 +162,7 @@ var (
 		feemarket.AppModuleBasic{},
 		intrarelayer.AppModuleBasic{},
 		aiaxbank.AppModuleBasic{},
+		aiaxbackbridge.AppModuleBasic{},
 	)
 
 	maccPerms = map[string][]string{
@@ -172,7 +176,8 @@ var (
 		gravitytypes.ModuleName:        {authtypes.Minter, authtypes.Burner},
 		evmtypes.ModuleName:            {authtypes.Minter, authtypes.Burner}, // used for secure addition and subtraction of balance using module account
 		irt.ModuleName:                 {authtypes.Minter, authtypes.Burner},
-		aiaxbanktypes.ModuleName:       {authtypes.Minter, authtypes.Burner},
+		aiaxbanktypes.ModuleName:       {},
+		aiaxbackbridgetypes.ModuleName: {},
 	}
 
 	// module accounts that are allowed to receive tokens
@@ -234,6 +239,8 @@ type Aiax struct {
 
 	// Aiax keeper
 	AiaxBankKeeper aiaxbankkeeper.Keeper
+
+	AiaxBackBridgeKeeper aiaxbackbridgekeeper.Keeper
 
 	// the module manager
 	mm *module.Manager
@@ -607,6 +614,7 @@ func NewAiax(
 		evmtypes.StoreKey, feemarkettypes.StoreKey,
 		irt.StoreKey,
 		aiaxbanktypes.StoreKey,
+		aiaxbackbridgetypes.StoreKey,
 	)
 
 	tkeys := sdk.NewTransientStoreKeys(paramstypes.TStoreKey, evmtypes.TransientKey)
@@ -738,6 +746,21 @@ func NewAiax(
 
 	app.AiaxBankKeeper.AttachGravity(&app.GravityKeeper)
 
+	app.GravityKeeper.SetEthereumEventsHook(&app.AiaxBankKeeper)
+
+	app.AiaxBackBridgeKeeper = aiaxbackbridgekeeper.NewKeeper(
+		keys[aiaxbackbridgetypes.StoreKey],
+		app.appCodec,
+		app.GetSubspace(aiaxbackbridgetypes.ModuleName),
+		&app.AccountKeeper,
+		app.BankKeeper,
+		app.EvmKeeper,
+		&app.IntrarelayerKeeper,
+		&app.GravityKeeper,
+	)
+
+	app.EvmKeeper.SetHooks(&app.AiaxBackBridgeKeeper)
+
 	skipGenesisInvariants := cast.ToBool(appOpts.Get(crisis.FlagSkipGenesisInvariants))
 
 	app.mm = module.NewManager(
@@ -768,6 +791,7 @@ func NewAiax(
 		feemarket.NewAppModule(app.FeeMarketKeeper),
 		intrarelayer.NewAppModule(app.IntrarelayerKeeper, app.AccountKeeper),
 		aiaxbank.NewAppModule(app.AiaxBankKeeper),
+		aiaxbackbridge.NewAppModule(app.AiaxBackBridgeKeeper),
 	)
 
 	// During begin block slashing happens after distr.BeginBlocker so that
@@ -787,6 +811,7 @@ func NewAiax(
 		evidencetypes.ModuleName,
 		stakingtypes.ModuleName,
 		ibchost.ModuleName,
+		aiaxbackbridgetypes.ModuleName,
 	)
 
 	// NOTE: fee market module must go last in order to retrieve the block gas used.
@@ -825,6 +850,7 @@ func NewAiax(
 		feemarkettypes.ModuleName,
 		irt.ModuleName,
 		aiaxbanktypes.ModuleName,
+		aiaxbackbridgetypes.ModuleName,
 		// NOTE: crisis module must go at the end to check for invariants on each module
 		crisistypes.ModuleName,
 	)

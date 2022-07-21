@@ -1,0 +1,7 @@
+syntax = "proto3";
+package aiaxbackbridge.v1;
+
+import "gogoproto/gogo.proto";
+option go_package = "github.com/aiax-network/aiax-node/x/aiaxbackbridge/types";
+
+message GenesisState {}

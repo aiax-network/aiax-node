@@ -1,0 +1,21 @@
+syntax = "proto3";
+package aiaxbackbridge.v1;
+
+import "gogoproto/gogo.proto";
+import "google/api/annotations.proto";
+
+option go_package = "github.com/aiax-network/aiax-node/x/aiaxbackbridge/types";
+
+service Query {
+  rpc ContractInfo(ContractInfoRequest) returns (ContractInfoResponse) {
+    option (google.api.http).get = "/aiaxbackbridge/v1/contract";
+  }
+}
+
+message ContractInfoRequest {}
+
+message ContractInfoResponse {
+  option (gogoproto.equal) = false;
+  option (gogoproto.goproto_getters) = false;
+  string address = 1;
+}
