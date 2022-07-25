@@ -235,6 +235,10 @@ type Aiax struct {
 	FeeMarketKeeper feemarketkeeper.Keeper
 
 	// Evmos keeper
+	// This keeper is only used for deploying contracts
+	// It's main feature is to exchange native tokens and erc20 from EvmKeeper
+	// We don't use it so
+	// TODO: remove this module, use own function for contract deployment
 	IntrarelayerKeeper irk.Keeper
 
 	// Aiax keeper

@@ -107,18 +107,9 @@ func (am AppModule) RegisterServices(cfg module.Configurator) {
 }
 
 func (am AppModule) BeginBlock(ctx sdk.Context, rbb abci.RequestBeginBlock) {
-	// For compatibility on testnet update
-	// Block logic on the old testnet before upgrade
-	if rbb.GetHeader().ChainID == "aiax_12344123324-1" && rbb.GetHeader().Height < 119400 {
-		return
-	}
-
-	// For compatibility on testnet update
-	// Init module account on old testnet
-	if rbb.GetHeader().ChainID == "aiax_12344123324-1" && rbb.GetHeader().Height == 119400 {
-		am.keeper.InitGenesis(ctx, types.GenesisState{})
-	}
-
+	// Tried to deploy contract somewhere in InitGenesis but EVM does not deploys it outside of block
+	// So it will be deployed in first block where it will not find stored address of contract
+	// In future this allows easy updating (just deploy new contract and overwrite contract address)
 	err := am.keeper.UpdateBackBridge(ctx)
 	if err != nil {
 		panic(err)

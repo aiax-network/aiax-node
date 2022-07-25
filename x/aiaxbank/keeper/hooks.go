@@ -13,6 +13,8 @@ import (
 	gtypes "github.com/peggyjv/gravity-bridge/module/x/gravity/types"
 )
 
+// TODO: maybe move to separate module?
+
 func (k Keeper) HandleEthereumEvent(ctx sdk.Context, eve gtypes.EthereumEvent) (bool, error) {
 	switch event := eve.(type) {
 	case *gtypes.SendToCosmosEvent:
@@ -99,7 +101,7 @@ func (k Keeper) handleSendToCosmosEvent(ctx sdk.Context, evt gtypes.SendToCosmos
 
 	aiaxContract, exists = k.grvKeeper.GetCosmosOriginatedERC20(ctx, "eth/"+extAddress.Hex())
 	if exists && extAddress == aiaxContract {
-		log.Info(fmt.Sprintf("Matched ERC20 token transfer to %s", evt.CosmosReceiver))
+		log.Info(fmt.Sprintf("Matched ERC20 (%s) token transfer to %s", "eth/"+extAddress.Hex(), evt.CosmosReceiver))
 		return false, nil
 	}
 

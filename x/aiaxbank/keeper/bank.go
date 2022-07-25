@@ -14,12 +14,17 @@ import (
 // TODO: support "eth/" and "aiax/"
 // TODO: go over all 'amt' values (for all functions)
 // TODO: safety checks as in banKeeper (for all functions)
+// TODO: complete all functions
 
 func (k Keeper) GetSupply(ctx sdk.Context, denom string) sdk.Coin {
 	return k.banKeeper.GetSupply(ctx, denom)
 }
 
 func (k Keeper) SendCoinsFromModuleToAccount(ctx sdk.Context, senderModule string, recipientAddr sdk.AccAddress, amt sdk.Coins) error {
+	if len(amt) != 1 {
+		return sdkerrors.Wrapf(sdkerrors.ErrInvalidCoins, "Number of coins is not 1")
+	}
+
 	if strings.HasPrefix(amt[0].Denom, "eth/") {
 		contract := common.HexToAddress(amt[0].Denom[4:])
 		exists, contract := k.ExternalERC20LocalLookup(ctx, contract)
@@ -51,6 +56,10 @@ func (k Keeper) SendCoinsFromModuleToModule(ctx sdk.Context, senderModule, recip
 }
 
 func (k Keeper) SendCoinsFromAccountToModule(ctx sdk.Context, senderAddr sdk.AccAddress, recipientModule string, amt sdk.Coins) error {
+	if len(amt) != 1 {
+		return sdkerrors.Wrapf(sdkerrors.ErrInvalidCoins, "Number of coins is not 1")
+	}
+
 	if strings.HasPrefix(amt[0].Denom, "eth/") {
 		contract := common.HexToAddress(amt[0].Denom[4:])
 		exists, contract := k.ExternalERC20LocalLookup(ctx, contract)
@@ -77,6 +86,10 @@ func (k Keeper) SendCoinsFromAccountToModule(ctx sdk.Context, senderAddr sdk.Acc
 }
 
 func (k Keeper) MintCoins(ctx sdk.Context, name string, amt sdk.Coins) error {
+	if len(amt) != 1 {
+		return sdkerrors.Wrapf(sdkerrors.ErrInvalidCoins, "Number of coins is not 1")
+	}
+
 	if strings.HasPrefix(amt[0].Denom, "eth/") {
 		contract := common.HexToAddress(amt[0].Denom[4:])
 		exists, contract := k.ExternalERC20LocalLookup(ctx, contract)
@@ -101,6 +114,10 @@ func (k Keeper) MintCoins(ctx sdk.Context, name string, amt sdk.Coins) error {
 }
 
 func (k Keeper) BurnCoins(ctx sdk.Context, name string, amt sdk.Coins) error {
+	if len(amt) != 1 {
+		return sdkerrors.Wrapf(sdkerrors.ErrInvalidCoins, "Number of coins is not 1")
+	}
+
 	if strings.HasPrefix(amt[0].Denom, "eth/") {
 		contract := common.HexToAddress(amt[0].Denom[4:])
 		exists, contract := k.ExternalERC20LocalLookup(ctx, contract)
